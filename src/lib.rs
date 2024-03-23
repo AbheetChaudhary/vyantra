@@ -3,11 +3,20 @@ use std::collections::HashMap;
 /// A really simple ISA
 #[derive(Copy, Clone, Debug)]
 pub enum Inst {
-    PSH(i32),      // push an integer to the stack
-    ADD,           // add two topmost stack entries and replace them with the resutl
-    POP,           // pop the stack
-    SET(Reg, i32), // set a register value
-    HLT,           // halt the program execution, end the machine
+    /// Push an integer to the stack
+    PSH(i32),
+
+    /// Add two topmost stack entries and replace them with the result
+    ADD,
+
+    /// Pop the stack
+    POP,
+
+    /// Set a register value
+    SET(Reg, i32),
+
+    /// Halt the program execution, end the machine
+    HLT,
 }
 
 /// Six general purpose registers
@@ -22,14 +31,25 @@ pub enum Reg {
 }
 
 pub struct Machine {
-    program: Vec<Inst>,           // array of instructions
-    ip: usize,                    // index of the next to-be-executed instruction
-    stack: Vec<i32>,              // THE STACK
-    registers: HashMap<Reg, i32>, // THE REGISTERS
+    /// Array of instructions
+    program: Vec<Inst>,
+
+    /// Index of the next to-be-executed instruction
+    ip: usize,
+
+    /// THE STACK
+    stack: Vec<i32>,
+
+    /// THE REGISTERS
+    registers: HashMap<Reg, i32>,
 }
 
 impl Machine {
+    /// Create a new machine instance.
+    /// It fails if the input program sequence is empty
     pub fn new(program: Vec<Inst>) -> Self {
+        assert!(program.len() > 0);
+
         let mut registers = HashMap::new();
         registers.insert(Reg::A, 0);
         registers.insert(Reg::B, 0);
@@ -46,6 +66,9 @@ impl Machine {
         }
     }
 
+    /// Run the machine and execute the program sequentially one instruction at a time.
+    /// `HLT` instruction causes the machine to stop execution and report current state.
+    /// If the final instruction is not `HLT` then it panics.
     pub fn run(&mut self) {
         loop {
             let inst = self.get_next_inst();
@@ -103,12 +126,12 @@ impl Machine {
             .expect("error: tried to set non-existant register");
     }
 
-    /// pop from the stack
+    /// Pop from the stack
     fn pop(&mut self) -> Option<i32> {
         self.stack.pop()
     }
 
-    /// push something on to the stack
+    /// Push something on to the stack
     fn push(&mut self, value: i32) {
         self.stack.push(value);
     }
