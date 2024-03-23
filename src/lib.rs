@@ -1,4 +1,9 @@
 use std::collections::HashMap;
+use std::error::Error;
+use std::fmt;
+
+/// Fixed stack size
+pub const STACK_SIZE: usize = 1024;
 
 /// A really simple ISA
 #[derive(Copy, Clone, Debug)]
@@ -30,6 +35,64 @@ pub enum Reg {
     F,
 }
 
+#[derive(Debug)]
+struct Stack {
+    memory: Vec<i32>,
+}
+
+#[derive(Debug)]
+enum StackError {
+    PushErr,
+    PopErr,
+}
+
+impl fmt::Display for StackError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let err_message = match self {
+            StackError::PushErr => {
+                format!(
+                    "stack overflow: cannot push more than {} elements on stack",
+                    STACK_SIZE
+                )
+            }
+
+            StackError::PopErr => {
+                format!("cannot pop from an empty stack")
+            }
+        };
+        write!(f, "{}", err_message)
+    }
+}
+
+impl Error for StackError {}
+
+impl Stack {
+    fn new() -> Self {
+        Stack {
+            memory: Vec::with_capacity(STACK_SIZE),
+        }
+    }
+
+    /// Pop from the stack
+    fn pop(&mut self) -> Result<i32, StackError> {
+        if self.memory.len() > 0 {
+            Ok(self.memory.pop().unwrap())
+        } else {
+            Err(StackError::PopErr)
+        }
+    }
+
+    /// Push something on to the stack
+    fn push(&mut self, value: i32) -> Result<(), StackError> {
+        if self.memory.len() < STACK_SIZE {
+            self.memory.push(value);
+            Ok(())
+        } else {
+            Err(StackError::PushErr)
+        }
+    }
+}
+
 pub struct Machine {
     /// Array of instructions
     program: Vec<Inst>,
@@ -38,7 +101,7 @@ pub struct Machine {
     ip: usize,
 
     /// THE STACK
-    stack: Vec<i32>,
+    stack: Stack,
 
     /// THE REGISTERS
     registers: HashMap<Reg, i32>,
@@ -61,7 +124,7 @@ impl Machine {
         Machine {
             program,
             ip: 0,
-            stack: Vec::new(),
+            stack: Stack::new(),
             registers,
         }
     }
@@ -74,25 +137,38 @@ impl Machine {
             let inst = self.get_next_inst();
             match inst {
                 Some(Inst::PSH(val)) => {
-                    self.push(val);
-                    println!("push {val}");
+                    if let Err(e) = self.stack.push(val) {
+                        panic!("{}", e);
+                    }
+                    println!("machine: push {val}");
                 }
                 Some(Inst::ADD) => {
-                    let arg_1 = self.pop().expect("missing argument");
-                    let arg_2 = self.pop().expect("missing argument");
-                    self.push(arg_1 + arg_2);
-                    println!("add: {arg_2} {arg_1}");
+                    let arg_1 = match self.stack.pop() {
+                        Ok(arg) => arg,
+                        Err(e) => panic!("missing addition argument: {}", e),
+                    };
+                    let arg_2 = match self.stack.pop() {
+                        Ok(arg) => arg,
+                        Err(e) => panic!("missing addition argument: {}", e),
+                    };
+                    if let Err(e) = self.stack.push(arg_1 + arg_2) {
+                        panic!("{}", e);
+                    }
+                    println!("machine: add: {arg_2} {arg_1}");
                 }
                 Some(Inst::POP) => {
-                    let val = self.pop().expect("implement Result here");
-                    println!("pop: {val}");
+                    let val = match self.stack.pop() {
+                        Ok(val) => val,
+                        Err(e) => panic!("{}", e),
+                    };
+                    println!("machine: pop: {val}");
                 }
                 Some(Inst::SET(reg, val)) => {
                     self.set_reg_value(reg, val);
                     println!("set: {reg:?} {val}");
                 }
                 Some(Inst::HLT) => {
-                    println!("\n\nhalting...");
+                    println!("\n\nmachine: halting...");
                     println!("program: {:?}", self.program);
                     println!("ip: {}", self.ip);
                     println!("stack: {:?}", self.stack);
@@ -124,16 +200,6 @@ impl Machine {
         self.registers
             .insert(reg, value)
             .expect("error: tried to set non-existant register");
-    }
-
-    /// Pop from the stack
-    fn pop(&mut self) -> Option<i32> {
-        self.stack.pop()
-    }
-
-    /// Push something on to the stack
-    fn push(&mut self, value: i32) {
-        self.stack.push(value);
     }
 }
 
