@@ -16,7 +16,11 @@ fn main() {
         Inst::CPY(Path::STK(0), Path::REG(Reg::A)),
         Inst::DIV,
         Inst::POP,
-        Inst::JMP(-6),
+        Inst::JMP(0),
+        Inst::PSH(69),
+        Inst::CPY(Path::REG(Reg::C), Path::STK(0)),
+        Inst::PSH(0),
+        Inst::CPY(Path::STK(0), Path::REG(Reg::C)),
         Inst::HLT,
     ];
     let mut machine = Machine::new(program);

@@ -132,9 +132,15 @@ impl Stack {
     fn get_at_idx(&self, idx: isize) -> Result<i32, PathError> {
         assert!(self.sp >= 0 && (self.sp as usize) < self.memory.len());
         if idx >= 0 {
-            self.memory.get(self.sp as usize - idx as usize).ok_or(PathError::StackErr).copied()
+            self.memory
+                .get(self.sp as usize - idx as usize)
+                .ok_or(PathError::StackErr)
+                .copied()
         } else {
-            self.memory.get(self.sp as usize + (-1 * idx) as usize).ok_or(PathError::StackErr).copied()
+            self.memory
+                .get(self.sp as usize + (-1 * idx) as usize)
+                .ok_or(PathError::StackErr)
+                .copied()
         }
     }
 
@@ -295,7 +301,7 @@ impl Machine {
                 Some(Inst::SET(reg, val)) => {
                     match self.set_reg_value(reg, val) {
                         Ok(_) => (),
-                        Err(e) => panic!("{}", e)
+                        Err(e) => panic!("{}", e),
                     };
                     println!("machine: set: {reg:?} {val}");
                 }
@@ -313,8 +319,9 @@ impl Machine {
                 Some(Inst::JMP(step)) => {
                     if step < 0 {
                         self.ip -= (-1 * (step - 1)) as usize;
-                    } else {
+                    } else if step > 0 {
                         self.ip += step as usize - 1;
+                    } else {
                     }
                 }
                 Some(Inst::HLT) => {
@@ -329,23 +336,15 @@ impl Machine {
 
     fn get_from_path(&self, path: Path) -> Result<i32, PathError> {
         match path {
-            Path::REG(reg) => {
-                self.get_reg_value(&reg)
-            }
-            Path::STK(rel_idx) => {
-                self.stack.get_at_idx(rel_idx)
-            }
+            Path::REG(reg) => self.get_reg_value(&reg),
+            Path::STK(rel_idx) => self.stack.get_at_idx(rel_idx),
         }
     }
 
     fn set_at_path(&mut self, path: Path, val: i32) -> Result<(), PathError> {
         match path {
-            Path::REG(reg) => {
-                self.set_reg_value(reg, val)
-            }
-            Path::STK(rel_idx) => {
-                self.stack.set_at_idx(rel_idx, val)
-            }
+            Path::REG(reg) => self.set_reg_value(reg, val),
+            Path::STK(rel_idx) => self.stack.set_at_idx(rel_idx, val),
         }
     }
 
@@ -370,7 +369,7 @@ impl Machine {
     fn get_reg_value(&self, reg: &Reg) -> Result<i32, PathError> {
         match self.registers.get(reg) {
             Some(val) => Ok(*val),
-            None => Err(PathError::RegErr)
+            None => Err(PathError::RegErr),
         }
     }
 
