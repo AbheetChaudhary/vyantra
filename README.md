@@ -3,7 +3,8 @@ A Virtual Machine
 - TODO
     - Implement these instructions: cmp, jz, jnz
 
-Language:
+- Language
+
     - `PSH(i32)` to Push an integer to the stack
 
     - `POP` to pop the stack
@@ -14,7 +15,7 @@ Language:
 
     - `MUL` to do integer multiplication
 
-    - `DIV` to do integer division
+    - `DIV` to do integer division. Integer arithemetic instructions operate on the last two stack elements and push the result on to the stack.
 
     - `SET(Reg, i32)` to set a register value. 
 
